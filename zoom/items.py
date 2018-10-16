@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
-
 import scrapy
-from scrapy.loader import ItemLoader, Identity
+
 from scrapy.loader.processors import TakeFirst
+from scrapy.loader import ItemLoader, Identity
 
 
 class Fridge(scrapy.Item):

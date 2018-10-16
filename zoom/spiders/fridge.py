@@ -10,10 +10,11 @@ class ZoomFridgeSpider(scrapy.Spider):
     start_urls = ['https://www.zoom.com.br/geladeira/todos']
 
     def parse(self, response):
-        for fridge_link in response.css('.tp-default .name-link::attr(href) ').extract():
+        for fridge_link in response.css('.tp-default .name-link::attr(href)').extract():
             yield scrapy.Request('https://www.zoom.com.br' + fridge_link, callback=self.parse_fridge)
 
-    def parse_fridge(self, response):
+    @classmethod
+    def parse_fridge(cls, response):
         fridge_loader = FridgeLoader(selector=response.css('.tech-spec-table tbody'))
         fridge_loader.add_css('name', 'h1.product-name span::text')
 
