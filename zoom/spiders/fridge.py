@@ -7,16 +7,23 @@ from zoom.items import FridgeLoader
 class ZoomFridgeSpider(scrapy.Spider):
     name = 'zoom_fridges'
 
-    start_urls = ['https://www.zoom.com.br/geladeira/todos']
+    start_urls = ['https://www.zoom.com.br/geladeira/preco-ate-2000/?resultsperpage=72&unavailable=1&resultorder=2']
 
     def parse(self, response):
         for fridge_link in response.css('.tp-default .name-link::attr(href)').extract():
             yield scrapy.Request('https://www.zoom.com.br' + fridge_link, callback=self.parse_fridge)
 
+        next_page = response.css('a.next::attr(href)').extract_first()
+        if next_page not in (None, 'javascript:void(0);'):
+            next_page = response.urljoin(next_page)
+            yield scrapy.Request(next_page, callback=self.parse)
+
     @classmethod
     def parse_fridge(cls, response):
         fridge_loader = FridgeLoader(selector=response.css('.tech-spec-table tbody'))
-        fridge_loader.add_css('name', 'h1.product-name span::text')
+        fridge_loader.add_xpath('name', '//h1[@class="product-name"]/span/text()')
+        fridge_loader.add_xpath('rating', '//div[@class="rating"]/span/@class')
+        fridge_loader.add_xpath('price', '//a[@class="price-label"]/strong/text()')
 
         basic_info_loader = fridge_loader.nested_css(':nth-child(1) tr')
         basic_info_loader.add_css('brand', ':nth-child(2) .table-val a::text')
