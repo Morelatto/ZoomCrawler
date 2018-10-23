@@ -47,7 +47,7 @@ class ZoomStoveSpider(scrapy.Spider):
         oven_info_loader.add_xpath('funcoes_especiais_forno', './/*[text()[contains(.,"Funções e Recursos Especiais do Forno")]]/../../td[@class="table-val"]//text()')
 
         energetic_efficiency_loader = oven_loader.nested_css(':nth-child(4) tr')
-        energetic_efficiency_loader.add_xpath('energetic_efficiency', './/*[text()[contains(.,"Eficiência Energética")]]/../../td[@class="table-val"]//text()')
+        energetic_efficiency_loader.add_xpath('eficiencia_energetica', './/*[text()[contains(.,"Eficiência Energética")]]/../../td[@class="table-val"]//text()')
 
         specifications_loader = oven_loader.nested_css(':nth-child(6) tr')
         specifications_loader.add_xpath('altura', './/*[text()[contains(.,"Altura")]]/../../td[@class="table-val"]//text()')
