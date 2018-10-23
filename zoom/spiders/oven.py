@@ -7,8 +7,7 @@ from zoom.items import OvenLoader
 class ZoomStoveSpider(scrapy.Spider):
     name = 'zoom_ovens'
 
-    start_urls = [
-        'https://www.zoom.com.br/fogao/preco-ate-1000/fogao-de-piso?resultsperpage=72&unavailable=1&resultorder=2']
+    start_urls = ['https://www.zoom.com.br/fogao/preco-ate-1000/fogao-de-piso']
 
     def parse(self, response):
         for stove_link in response.css('.tp-default .name-link::attr(href)').extract():
@@ -24,37 +23,37 @@ class ZoomStoveSpider(scrapy.Spider):
         oven_loader = OvenLoader(selector=response.css('.tech-spec-table tbody'))
         oven_loader.add_xpath('nome', '//h1[@class="product-name"]/span/text()')
         oven_loader.add_xpath('rating', '//div[@class="rating"]/span/@class')
+        oven_loader.add_xpath('avaliacoes', '//a[@class="vote-txt"]/span/text()')
         oven_loader.add_xpath('preco', '//a[@class="price-label"]/strong/text()')
 
         basic_info_loader = oven_loader.nested_css(':nth-child(1) tr')
-        basic_info_loader.add_css('marca', ':nth-child(2) .table-val a::text')
-        basic_info_loader.add_css('modelo', ':nth-child(3) .table-val::text')
+        basic_info_loader.add_xpath('marca', './/*[text()[contains(.,"Marca")]]/../td[@class="table-val"]//text()')
+        basic_info_loader.add_xpath('modelo', './/*[text()[contains(.,"Modelo")]]/../td[@class="table-val"]//text()')
 
         stove_info_loader = oven_loader.nested_css(':nth-child(2) tr')
-        stove_info_loader.add_css('tipo', ':nth-child(2) .table-val a::text')
-        stove_info_loader.add_css('bocas', ':nth-child(3) .table-val a::text')
-        stove_info_loader.add_css('funcionamento_mesa', ':nth-child(4) .table-val a::text')
-        stove_info_loader.add_css('acendimento_mesa', ':nth-child(5) .table-val a::text')
-        stove_info_loader.add_css('acabamento_inox', ':nth-child(6) .table-val a::text')
-        stove_info_loader.add_css('acabamento_inox', ':nth-child(6) .table-val span::text')
-        stove_info_loader.add_css('material_mesa', ':nth-child(7) .table-val span::text')
-        stove_info_loader.add_css('funcoes_mesa', ':nth-child(8) .table-val a::text')
-        stove_info_loader.add_css('tipo_grade', ':nth-child(9) .table-val span::text')
+        stove_info_loader.add_xpath('tipo', './/*[text()[contains(.,"Tipo de Fogão")]]/../../td[@class="table-val"]//text()')
+        stove_info_loader.add_xpath('bocas', './/*[text()[contains(.,"Número de Bocas")]]/../../td[@class="table-val"]//text()')
+        stove_info_loader.add_xpath('funcionamento_mesa', './/*[text()[contains(.,"Funcionamento da Mesa")]]/../../td[@class="table-val"]//text()')
+        stove_info_loader.add_xpath('acendimento_mesa', './/*[text()[contains(.,"Tipo de Acendimento da Mesa")]]/../../td[@class="table-val"]//text()')
+        stove_info_loader.add_xpath('acabamento_inox', './/*[text()[contains(.,"Acabamento Inox")]]/../../td[@class="table-val"]//text()')
+        stove_info_loader.add_xpath('material_mesa', './/*[text()[contains(.,"Material da Mesa")]]/../../td[@class="table-val"]//text()')
+        stove_info_loader.add_xpath('funcoes_mesa', './/*[text()[contains(.,"Funções e Recursos da Mesa")]]/../../td[@class="table-val"]//text()')
+        stove_info_loader.add_xpath('tipo_grade', './/*[text()[contains(.,"Tipo de Grade")]]/../../td[@class="table-val"]//text()')
 
         oven_info_loader = oven_loader.nested_css(':nth-child(3) tr')
-        oven_info_loader.add_css('capacidade_forno', ':nth-child(2) .table-val span::text')
-        oven_info_loader.add_css('prateleiras_forno', ':nth-child(3) .table-val span::text')
-        oven_info_loader.add_css('funcoes_forno', ':nth-child(4) .table-val a::text')
-        oven_info_loader.add_css('funcoes_especiais_forno', ':nth-child(5) .table-val a::text')
+        oven_info_loader.add_xpath('capacidade_forno', './/*[text()[contains(.,"Capacidade do Forno")]]/../../td[@class="table-val"]//text()')
+        oven_info_loader.add_xpath('prateleiras_forno', './/*[text()[contains(.,"Prateleiras do Forno")]]/../../td[@class="table-val"]//text()')
+        oven_info_loader.add_xpath('funcoes_forno', './/*[text()[contains(.,"Funções e Recursos Básicos do Forno")]]/../../td[@class="table-val"]//text()')
+        oven_info_loader.add_xpath('funcoes_especiais_forno', './/*[text()[contains(.,"Funções e Recursos Especiais do Forno")]]/../../td[@class="table-val"]//text()')
 
         energetic_efficiency_loader = oven_loader.nested_css(':nth-child(4) tr')
-        energetic_efficiency_loader.add_css('energetic_efficiency', ':nth-child(2) .table-val a::text')
+        energetic_efficiency_loader.add_xpath('energetic_efficiency', './/*[text()[contains(.,"Eficiência Energética")]]/../../td[@class="table-val"]//text()')
 
         specifications_loader = oven_loader.nested_css(':nth-child(6) tr')
-        specifications_loader.add_css('altura', ':nth-child(2) .table-val a::text')
-        specifications_loader.add_css('largura', ':nth-child(3) .table-val a::text')
-        specifications_loader.add_css('profundidade', ':nth-child(4) .table-val a::text')
-        specifications_loader.add_css('peso', ':nth-child(5) .table-val span::text')
-        specifications_loader.add_css('voltagem', ':nth-child(6) .table-val span::text')
+        specifications_loader.add_xpath('altura', './/*[text()[contains(.,"Altura")]]/../../td[@class="table-val"]//text()')
+        specifications_loader.add_xpath('largura', './/*[text()[contains(.,"Largura")]]/../../td[@class="table-val"]//text()')
+        specifications_loader.add_xpath('profundidade', './/*[text()[contains(.,"Profundidade")]]/../../td[@class="table-val"]//text()')
+        specifications_loader.add_xpath('peso', './/*[text()[contains(.,"Peso")]]/../../td[@class="table-val"]//text()')
+        specifications_loader.add_xpath('voltagem', './/*[text()[contains(.,"Voltagem")]]/../../td[@class="table-val"]//text()')
 
         yield oven_loader.load_item()

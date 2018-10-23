@@ -47,6 +47,7 @@ class FridgeLoader(ItemLoader):
 class Oven(scrapy.Item):
     nome = scrapy.Field()
     rating = scrapy.Field()
+    avaliacoes = scrapy.Field()
     preco = scrapy.Field()
     marca = scrapy.Field()
     modelo = scrapy.Field()

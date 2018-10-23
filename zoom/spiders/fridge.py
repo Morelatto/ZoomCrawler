@@ -7,7 +7,7 @@ from zoom.items import FridgeLoader
 class ZoomFridgeSpider(scrapy.Spider):
     name = 'zoom_fridges'
 
-    start_urls = ['https://www.zoom.com.br/geladeira/preco-ate-2000/?resultsperpage=72&unavailable=1&resultorder=2']
+    start_urls = ['https://www.zoom.com.br/geladeira/preco-ate-2400/frost-free/capacidade-300-a-349-litros/capacidade-350-a-449-litros']
 
     def parse(self, response):
         for fridge_link in response.css('.tp-default .name-link::attr(href)').extract():
@@ -20,6 +20,7 @@ class ZoomFridgeSpider(scrapy.Spider):
 
     @classmethod
     def parse_fridge(cls, response):
+        # TODO replace css with xpath like oven
         fridge_loader = FridgeLoader(selector=response.css('.tech-spec-table tbody'))
         fridge_loader.add_xpath('name', '//h1[@class="product-name"]/span/text()')
         fridge_loader.add_xpath('rating', '//div[@class="rating"]/span/@class')
