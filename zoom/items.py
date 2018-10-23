@@ -81,3 +81,48 @@ class OvenLoader(ItemLoader):
     funcoes_forno_out = Identity()
     funcoes_especiais_forno_out = Identity()
     voltagem = Identity()
+
+
+class Washer(scrapy.Item):
+    nome = scrapy.Field()
+    rating = scrapy.Field()
+    avaliacoes = scrapy.Field()
+    preco = scrapy.Field()
+    marca = scrapy.Field()
+    modelo = scrapy.Field()
+    tipo = scrapy.Field()
+    abertura = scrapy.Field()
+    capacidade = scrapy.Field()
+    controle = scrapy.Field()
+    recursos_avancados = scrapy.Field()
+    programas = scrapy.Field()
+    acabamento_gabinete = scrapy.Field()
+    acabamento_cesto = scrapy.Field()
+    operacoes = scrapy.Field()
+    velocidade = scrapy.Field()
+    enxagues = scrapy.Field()
+    dispenser = scrapy.Field()
+    recursos_basicos = scrapy.Field()
+    eficiencia_energetica = scrapy.Field()
+    eco_lavagem = scrapy.Field()
+    economia_agua = scrapy.Field()
+    reaproveitamento_agua = scrapy.Field()
+    altura = scrapy.Field()
+    largura = scrapy.Field()
+    profundidade = scrapy.Field()
+    peso = scrapy.Field()
+    voltagem = scrapy.Field()
+    consumo = scrapy.Field()
+
+
+class WasherLoader(ItemLoader):
+    default_item_class = Washer
+    default_output_processor = TakeFirst()
+
+    rating_out = parse_rating
+    controle_out = Identity()
+    operacoes_out = Identity()
+    dispenser_out = Identity()
+    recursos_basicos_out = Identity()
+    recursos_avancados_out = Identity()
+    voltagem = Identity()
