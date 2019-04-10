@@ -1,29 +1,35 @@
 # -*- coding: utf-8 -*-
 import scrapy
-from scrapy.loader import ItemLoader
 
-from tv.items import TvItem, TvPriceRange
+from scrapy import Selector
+from scrapy.loader import ItemLoader
+from tv.items import TvItem, TvOffer
 
 # CSS Selectors
 TEXT_SEL = '::text'
+TOTAL_PRODUCTS = '.products-amount' + TEXT_SEL
 NAME_AND_MODEL = '.product-info h1 span' + TEXT_SEL
 STARS_AND_RATINGS = '.rating span'
+OFFER_TABLE = '.prices'
+TRUSTED_STORES = '.price-tools .title span:nth-child(2)' + TEXT_SEL
 STORE_NAME = '.store-info img::attr(alt)'
 PRICE_CASH = '.main-price-format .lbt'
+PARCEL_PRICE = '.secondary-price-format .lbt'
 PARCEL_AMOUNT = '.parc-compl-first strong' + TEXT_SEL
 PARCEL_TOTAL = '.parc-compl-last' + TEXT_SEL
-PARCEL_PRICE = '.secondary-price-format .lbt'
 
 
-class TvSSpider(scrapy.Spider):
-    name = 'tv_s'
+class TvSpider(scrapy.Spider):
+    name = 'tvs'
     allowed_domains = ['zoom.com.br']
     start_urls = ['https://www.zoom.com.br/tv/preco-1500-ou-mais/smart-tv/48-polegadas/49-/tamanho-50-polegadas/'
                   'tamanho-51-polegadas/tamanho-55-polegadas/tamanho-58-polegadas/tamanho-60-polegadas-ou-mais/'
-                  'tamanho-65-polegadas/tamanho-70-polegadas-ou-mais/ultra-definicao-4k-/full-hd/8k']
+                  'tamanho-65-polegadas/tamanho-70-polegadas-ou-mais/ultra-definicao-4k-/full-hd/8k?resultsperpage=72']
 
     def parse(self, response):
-        pass
+        self.logger.info(response.css(TOTAL_PRODUCTS).extract_first().strip())
+        for href in response.xpath('//h2/a/@href').getall():
+            yield scrapy.Request(response.urljoin(href), self.parse_tv)
 
     def parse_tv(self, response):
         il = ItemLoader(item=TvItem(), response=response)
@@ -31,21 +37,24 @@ class TvSSpider(scrapy.Spider):
         il.add_css('model', NAME_AND_MODEL)
         il.add_css('stars', STARS_AND_RATINGS)
         il.add_css('ratings', STARS_AND_RATINGS)
+        il.add_value('offer_list', self.get_tv_offers(il.nested_css(OFFER_TABLE)))
 
-        # pl = il.nested_css('ul.product-list li')
-        # pl.add_css()
-        #
-        # il.load_item()
+        yield il.load_item()
 
-        pl = ItemLoader(item=TvPriceRange(), selector=il.nested_css('ul.product-list li'))
-        pl.add_css('store', '%s' % STORE_NAME)
-        pl.add_css('price_cash', PRICE_CASH + TEXT_SEL)
-        pl.add_css('price_cash', '%s span%s' % (PRICE_CASH, TEXT_SEL))
-        pl.add_css('price_parcel', PARCEL_PRICE + TEXT_SEL)
-        pl.add_css('parcel_amount', PARCEL_AMOUNT)
-        pl.add_css('parcel_total', PARCEL_TOTAL)
+    def get_tv_offers(self, loader):
+        full_name = loader.get_collected_values('name')
+        trust = loader.get_css(TRUSTED_STORES)
+        self.logger.info('%s - %s' % (full_name, trust))
 
-        il.load_item()
+        for offer in loader.get_css('.product-list li'):
+            pl = ItemLoader(item=TvOffer(), selector=Selector(text=offer))
+            pl.add_css('store', STORE_NAME)
+            pl.add_css('price_cash', PRICE_CASH + TEXT_SEL)
+            pl.add_css('price_cash', '%s span%s' % (PRICE_CASH, TEXT_SEL))
+            pl.add_css('price_parcel', PARCEL_PRICE + TEXT_SEL)
+            pl.add_css('parcel_amount', PARCEL_AMOUNT)
+            pl.add_css('parcel_total', PARCEL_TOTAL)
+            yield pl.load_item()
 
 
 ''''

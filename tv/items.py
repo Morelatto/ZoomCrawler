@@ -1,23 +1,32 @@
 # -*- coding: utf-8 -*-
-
+import re
 import scrapy
+
 from scrapy.loader.processors import Compose, TakeFirst, Join
 
 
+def get_last(l):
+    return l.split()[-1] if l is not None and len(l) > 0 else None
+
+
 class TvItem(scrapy.Item):
-    name = scrapy.Field(output_processor=Compose(lambda v: v.split(v.split()[-1])[0]))
-    model = scrapy.Field(output_processor=Compose(lambda v: v.split()[-1]))
-    stars = scrapy.Field(output_processor=TakeFirst())  # TODO debug type, lambda regex star_(\d-\d)
-    ratings = scrapy.Field()  # TODO compose with lambda regex \d
-    tv_price_range = scrapy.Field()
+    name = scrapy.Field(output_processor=Compose(TakeFirst(), lambda v: v.split()[:-1], Join()))
+    model = scrapy.Field(output_processor=Compose(TakeFirst(), get_last))
+    stars = scrapy.Field(output_processor=Compose(TakeFirst(), lambda v: re.findall(r'\d-\d', v)))
+    ratings = scrapy.Field(output_processor=Compose(lambda v: v[-1] if len(v) > 1 else None,
+                                                    lambda v: re.findall(r'\d+', v), TakeFirst()))
+    offer_list = scrapy.Field()
 
 
-class TvPriceRange(scrapy.Item):
-    store = scrapy.Field()
-    price_cash = scrapy.Field(output_processor=Join())
-    price_parcel = scrapy.Field()
-    parcel_amount = scrapy.Field(output_processor=lambda v: v.split('x')[0])
-    parcel_total = scrapy.Field()  # TODO confirm db, remove 'total a prazo'
+class TvOffer(scrapy.Item):
+    store = scrapy.Field(output_processor=TakeFirst())
+    price_cash = scrapy.Field(output_processor=Compose(Join(''), get_last))
+    price_parcel = scrapy.Field(output_processor=Compose(TakeFirst(), get_last))
+    parcel_amount = scrapy.Field(output_processor=Compose(TakeFirst(), lambda v: v.split('x')[0]))
+    parcel_total = scrapy.Field(output_processor=Compose(TakeFirst(), get_last))  # TODO confirm db
+
+    def __repr__(self):
+        return str(dict(self))
 
 
 '''
