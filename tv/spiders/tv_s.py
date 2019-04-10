@@ -1,5 +1,12 @@
 # -*- coding: utf-8 -*-
 import scrapy
+from scrapy.loader import ItemLoader
+
+from tv.items import TvItem
+
+# CSS Selectors
+NAME_AND_MODEL = 'div.product-info h1 span::text'
+STARS_AND_RATINGS = 'div.rating span'
 
 
 class TvSSpider(scrapy.Spider):
@@ -13,7 +20,17 @@ class TvSSpider(scrapy.Spider):
         pass
 
     def parse_tv(self, response):
-        tv = TvItem
+        il = ItemLoader(item=TvItem(), response=response)
+        il.add_css('name', NAME_AND_MODEL)
+        il.add_css('model', NAME_AND_MODEL)
+        il.add_css('stars', STARS_AND_RATINGS)
+        il.add_css('ratings', STARS_AND_RATINGS)
+
+        pl = il.nested_css('ul.product-list li')
+        pl.add_css()
+
+        il.load_item()
+
 ''''
 div.product-info 
  h1.product-name span@text() = name with model 
@@ -64,10 +81,7 @@ TVPriceRange(Item)
  parcel_amount = scrapy.Field(output_processor=lambda: value.split('x')[0])
  price_parcel
  parcel_total
- 
-il = ItemLoader(item=TV())
-il.add ...
-il.load_item()
+
  
  
  
