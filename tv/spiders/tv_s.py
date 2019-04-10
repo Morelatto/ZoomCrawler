@@ -2,11 +2,17 @@
 import scrapy
 from scrapy.loader import ItemLoader
 
-from tv.items import TvItem
+from tv.items import TvItem, TvPriceRange
 
 # CSS Selectors
-NAME_AND_MODEL = 'div.product-info h1 span::text'
-STARS_AND_RATINGS = 'div.rating span'
+TEXT_SEL = '::text'
+NAME_AND_MODEL = '.product-info h1 span' + TEXT_SEL
+STARS_AND_RATINGS = '.rating span'
+STORE_NAME = '.store-info img::attr(alt)'
+PRICE_CASH = '.main-price-format .lbt'
+PARCEL_AMOUNT = '.parc-compl-first strong' + TEXT_SEL
+PARCEL_TOTAL = '.parc-compl-last' + TEXT_SEL
+PARCEL_PRICE = '.secondary-price-format .lbt'
 
 
 class TvSSpider(scrapy.Spider):
@@ -26,10 +32,21 @@ class TvSSpider(scrapy.Spider):
         il.add_css('stars', STARS_AND_RATINGS)
         il.add_css('ratings', STARS_AND_RATINGS)
 
-        pl = il.nested_css('ul.product-list li')
-        pl.add_css()
+        # pl = il.nested_css('ul.product-list li')
+        # pl.add_css()
+        #
+        # il.load_item()
+
+        pl = ItemLoader(item=TvPriceRange(), selector=il.nested_css('ul.product-list li'))
+        pl.add_css('store', '%s' % STORE_NAME)
+        pl.add_css('price_cash', PRICE_CASH + TEXT_SEL)
+        pl.add_css('price_cash', '%s span%s' % (PRICE_CASH, TEXT_SEL))
+        pl.add_css('price_parcel', PARCEL_PRICE + TEXT_SEL)
+        pl.add_css('parcel_amount', PARCEL_AMOUNT)
+        pl.add_css('parcel_total', PARCEL_TOTAL)
 
         il.load_item()
+
 
 ''''
 div.product-info 
@@ -47,7 +64,7 @@ div.product-info
 trocar cep? (shipping preview)
 
 for li in ul.product-list
- div.image-store-attr div.store-info img.alt = store name
+ div.store-info img.alt = store name
  div.main-price-format
   a.lbt
    @text() = store price

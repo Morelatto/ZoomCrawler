@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import scrapy
-from scrapy.loader.processors import Compose, TakeFirst
+from scrapy.loader.processors import Compose, TakeFirst, Join
 
 
 class TvItem(scrapy.Item):
@@ -14,10 +14,10 @@ class TvItem(scrapy.Item):
 
 class TvPriceRange(scrapy.Item):
     store = scrapy.Field()
-    price_cash = scrapy.Field()
+    price_cash = scrapy.Field(output_processor=Join())
     price_parcel = scrapy.Field()
     parcel_amount = scrapy.Field(output_processor=lambda v: v.split('x')[0])
-    parcel_total = scrapy.Field()  # TODO confirm db
+    parcel_total = scrapy.Field()  # TODO confirm db, remove 'total a prazo'
 
 
 '''
