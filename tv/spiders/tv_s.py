@@ -1,11 +1,10 @@
 # -*- coding: utf-8 -*-
 import json
-
 import scrapy
 
 from scrapy import Selector
 from scrapy.loader import ItemLoader
-from tv.items import TvItem, TvOffer, PriceHistory, get_last
+from tv.items import TvItem, TvOffer, PriceHistory, get_last, TableItem
 
 # CSS Selectors
 TEXT_SEL = '::text'
@@ -26,6 +25,12 @@ PRICE_CASH = '.main-price-format .lbt'
 PARCEL_PRICE = '.secondary-price-format .lbt'
 PARCEL_AMOUNT = '.parc-compl-first strong' + TEXT_SEL
 PARCEL_TOTAL = '.parc-compl-last' + TEXT_SEL
+TECH_SPEC_TABLE = '.details'
+TABLE_ROW = '.ti'
+TABLE_ATTR = '.table-attr' + TEXT_SEL
+TABLE_ATTR_WITH_DIV = '.table-attr .item' + TEXT_SEL
+TABLE_VAL = '.table-val *' + TEXT_SEL
+TABLE_TITLE = '.section-title' + TEXT_SEL
 
 
 class TvSpider(scrapy.Spider):
@@ -33,7 +38,7 @@ class TvSpider(scrapy.Spider):
     allowed_domains = ['zoom.com.br']
     start_urls = ['https://www.zoom.com.br/tv/preco-1500-ou-mais/smart-tv/48-polegadas/49-/tamanho-50-polegadas/'
                   'tamanho-51-polegadas/tamanho-55-polegadas/tamanho-58-polegadas/tamanho-60-polegadas-ou-mais/'
-                  'tamanho-65-polegadas/tamanho-70-polegadas-ou-mais/ultra-definicao-4k-/full-hd/8k?resultsperpage=18']
+                  'tamanho-65-polegadas/tamanho-70-polegadas-ou-mais/ultra-definicao-4k-/full-hd/8k?resultsperpage=18']  # resultsperpage=72
 
     def parse(self, response):
         self.logger.info(response.css(TOTAL_PRODUCTS).extract_first().strip())
@@ -59,6 +64,7 @@ class TvSpider(scrapy.Spider):
         il.add_css('lowest_price_last_40', LOWEST_40)  # FIXME
         il.add_css('lowest_price_today', LOWEST_1)
         il.add_value('offer_list', self.get_tv_offers(il.nested_css(OFFER_TABLE)))
+        il.add_value('tech_spec_table', self.get_tech_spec_table(il.nested_css(TECH_SPEC_TABLE)))
         yield il.load_item()
 
     def get_tv_offers(self, loader):
@@ -90,6 +96,19 @@ class TvSpider(scrapy.Spider):
         hl.add_value('name', response.meta['name'])
         hl.add_value('history', history)
         yield hl.load_item()
+
+    def get_tech_spec_table(self, loader):
+        item = TableItem()
+        rows = dict()
+        for row in loader.get_css(TABLE_ROW):
+            sel = Selector(text=row)
+            row_key = sel.css(TABLE_ATTR).get(sel.css(TABLE_ATTR_WITH_DIV).get())
+            row_value = sel.css(TABLE_VAL).getall()
+            rows[row_key] = row_value
+
+        self.logger.info('%s (%d)' % (loader.get_css(TABLE_TITLE), len(rows.keys())))
+        item['row'] = rows
+        yield item
 
 
 ''''

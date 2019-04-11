@@ -21,6 +21,7 @@ class TvItem(scrapy.Item):
     lowest_price_today = scrapy.Field(output_processor=remove_currency)
     offer_list = scrapy.Field()
     price_history = scrapy.Field()
+    tech_spec_table = scrapy.Field()
 
 
 class TvOffer(scrapy.Item):
@@ -38,6 +39,10 @@ class PriceHistory(scrapy.Item):
     default_output_processor = TakeFirst()
     name = scrapy.Field()
     history = scrapy.Field()
+
+
+class TableItem(scrapy.Item):
+    row = scrapy.Field()
 
 
 '''
