@@ -4,7 +4,7 @@ import scrapy
 
 from scrapy import Selector
 from scrapy.loader import ItemLoader
-from tv.items import TvItem, TvOffer, PriceHistory, get_last, TableItem
+from zoom_tvs.items import TvItem, TvOffer, PriceHistory, get_last, TableItem
 
 # CSS Selectors
 TEXT_SEL = '::text'
