@@ -9,24 +9,35 @@ def get_last(l):
     return l.split()[-1] if l is not None and len(l) > 0 else None
 
 
+remove_currency = Compose(TakeFirst(), get_last)
+
+
 class TvItem(scrapy.Item):
-    name = scrapy.Field(output_processor=Compose(TakeFirst(), lambda v: v.split()[:-1], Join()))
-    model = scrapy.Field(output_processor=Compose(TakeFirst(), get_last))
+    name = scrapy.Field(output_processor=TakeFirst())
     stars = scrapy.Field(output_processor=Compose(TakeFirst(), lambda v: re.findall(r'\d-\d', v)))
     ratings = scrapy.Field(output_processor=Compose(lambda v: v[-1] if len(v) > 1 else None,
                                                     lambda v: re.findall(r'\d+', v), TakeFirst()))
+    lowest_price_last_40 = scrapy.Field(output_processor=remove_currency)
+    lowest_price_today = scrapy.Field(output_processor=remove_currency)
     offer_list = scrapy.Field()
+    price_history = scrapy.Field()
 
 
 class TvOffer(scrapy.Item):
     store = scrapy.Field(output_processor=TakeFirst())
     price_cash = scrapy.Field(output_processor=Compose(Join(''), get_last))
-    price_parcel = scrapy.Field(output_processor=Compose(TakeFirst(), get_last))
+    price_parcel = scrapy.Field(output_processor=remove_currency)
     parcel_amount = scrapy.Field(output_processor=Compose(TakeFirst(), lambda v: v.split('x')[0]))
-    parcel_total = scrapy.Field(output_processor=Compose(TakeFirst(), get_last))  # TODO confirm db
+    parcel_total = scrapy.Field(output_processor=remove_currency)  # TODO confirm db
 
     def __repr__(self):
         return str(dict(self))
+
+
+class PriceHistory(scrapy.Item):
+    default_output_processor = TakeFirst()
+    name = scrapy.Field()
+    history = scrapy.Field()
 
 
 '''

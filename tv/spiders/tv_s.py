@@ -1,17 +1,26 @@
 # -*- coding: utf-8 -*-
+import json
+
 import scrapy
 
 from scrapy import Selector
 from scrapy.loader import ItemLoader
-from tv.items import TvItem, TvOffer
+from tv.items import TvItem, TvOffer, PriceHistory, get_last
 
 # CSS Selectors
 TEXT_SEL = '::text'
 TOTAL_PRODUCTS = '.products-amount' + TEXT_SEL
-NAME_AND_MODEL = '.product-info h1 span' + TEXT_SEL
+LIST_ITEM = '#storeFrontList .tp-default'
+ITEM_URL = 'a.name-link'
+PROD_ID = '.save-product'
+NAME_AND_MODEL = '.prod-name a' + TEXT_SEL
+NAME_AND_MODEL_2 = '.product-info h1 span' + TEXT_SEL
 STARS_AND_RATINGS = '.rating span'
+LOWEST_40 = '.min-price-40 .value' + TEXT_SEL
+LOWEST_1 = '.min-price-today .value' + TEXT_SEL
 OFFER_TABLE = '.prices'
 TRUSTED_STORES = '.price-tools .title span:nth-child(2)' + TEXT_SEL
+PRODUCT_LIST_ITEM = '.product-list li'
 STORE_NAME = '.store-info img::attr(alt)'
 PRICE_CASH = '.main-price-format .lbt'
 PARCEL_PRICE = '.secondary-price-format .lbt'
@@ -24,29 +33,40 @@ class TvSpider(scrapy.Spider):
     allowed_domains = ['zoom.com.br']
     start_urls = ['https://www.zoom.com.br/tv/preco-1500-ou-mais/smart-tv/48-polegadas/49-/tamanho-50-polegadas/'
                   'tamanho-51-polegadas/tamanho-55-polegadas/tamanho-58-polegadas/tamanho-60-polegadas-ou-mais/'
-                  'tamanho-65-polegadas/tamanho-70-polegadas-ou-mais/ultra-definicao-4k-/full-hd/8k?resultsperpage=72']
+                  'tamanho-65-polegadas/tamanho-70-polegadas-ou-mais/ultra-definicao-4k-/full-hd/8k?resultsperpage=18']
 
     def parse(self, response):
         self.logger.info(response.css(TOTAL_PRODUCTS).extract_first().strip())
-        for href in response.xpath('//h2/a/@href').getall():
-            yield scrapy.Request(response.urljoin(href), self.parse_tv)
+        for item in response.css(LIST_ITEM):
+            url = item.css(ITEM_URL).attrib['href']
+            assert url is not None
+            yield scrapy.Request(response.urljoin(url), self.parse_tv)
+
+            prod_id = item.css(PROD_ID).attrib['data-product-id']
+            name = item.css(NAME_AND_MODEL).get()
+            assert prod_id is not None
+            assert name is not None
+            yield scrapy.FormRequest(url='https://www.zoom.com.br/product_desk',
+                                     formdata={'__pAct_': '_get_ph', '_ph_t': 'd', 'prodid': prod_id},
+                                     callback=self.parse_price_history,
+                                     meta={'name': name})
 
     def parse_tv(self, response):
         il = ItemLoader(item=TvItem(), response=response)
-        il.add_css('name', NAME_AND_MODEL)
-        il.add_css('model', NAME_AND_MODEL)
+        il.add_css('name', NAME_AND_MODEL_2)
         il.add_css('stars', STARS_AND_RATINGS)
         il.add_css('ratings', STARS_AND_RATINGS)
+        il.add_css('lowest_price_last_40', LOWEST_40)  # FIXME
+        il.add_css('lowest_price_today', LOWEST_1)
         il.add_value('offer_list', self.get_tv_offers(il.nested_css(OFFER_TABLE)))
-
         yield il.load_item()
 
     def get_tv_offers(self, loader):
-        full_name = loader.get_collected_values('name')
+        name = loader.get_collected_values('name')
         trust = loader.get_css(TRUSTED_STORES)
-        self.logger.info('%s - %s' % (full_name, trust))
+        self.logger.info('%s - %s' % (name, trust))
 
-        for offer in loader.get_css('.product-list li'):
+        for offer in loader.get_css(PRODUCT_LIST_ITEM):
             pl = ItemLoader(item=TvOffer(), selector=Selector(text=offer))
             pl.add_css('store', STORE_NAME)
             pl.add_css('price_cash', PRICE_CASH + TEXT_SEL)
@@ -54,7 +74,22 @@ class TvSpider(scrapy.Spider):
             pl.add_css('price_parcel', PARCEL_PRICE + TEXT_SEL)
             pl.add_css('parcel_amount', PARCEL_AMOUNT)
             pl.add_css('parcel_total', PARCEL_TOTAL)
+
             yield pl.load_item()
+
+    def parse_price_history(self, response):
+        json_response = json.loads(response.body_as_unicode())
+        history = dict()
+        for point in json_response['points']:
+            ddmm = point['x']['label']
+            day, month = ddmm.split('/')
+            value = point['y']['label']
+            history[month] = {**history.get(month, {}), **{day: get_last(value)}}
+
+        hl = ItemLoader(item=PriceHistory())
+        hl.add_value('name', response.meta['name'])
+        hl.add_value('history', history)
+        yield hl.load_item()
 
 
 ''''
