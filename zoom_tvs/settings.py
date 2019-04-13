@@ -14,22 +14,26 @@ USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTM
 # 'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.36'
 # 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2227.1 Safari/537.36'
 
-# AUTOTHROTTLE_ENABLED = True
-# AUTOTHROTTLE_DEBUG = True
-DOWNLOAD_DELAY = 3
+AUTOTHROTTLE_ENABLED = True
+AUTOTHROTTLE_DEBUG = True
+# DOWNLOAD_DELAY = 3
 # CONCURRENT_REQUESTS_PER_DOMAIN = 16 (default 8)
 
-#DEFAULT_REQUEST_HEADERS = {
+# DEFAULT_REQUEST_HEADERS = {
 #   'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
 #   'Accept-Language': 'en',
-#}
+# }
 
 TELNETCONSOLE_ENABLED = False
 EXTENSIONS = {
-   'scrapy.extensions.telnet.TelnetConsole': None,
+    'scrapy.extensions.telnet.TelnetConsole': None,
 }
 
-#ITEM_PIPELINES = {
-#    'tv.pipelines.TvPipeline': 300,
-#}
+ITEM_PIPELINES = {
+    'scrapy_mongodb.MongoDBPipeline': 300,
+}
 
+MONGODB_URI = 'mongodb://localhost:27017'
+MONGODB_DATABASE = 'zoom'
+MONGODB_COLLECTION = 'tvs'
+MONGODB_SEPARATE_COLLECTIONS = True

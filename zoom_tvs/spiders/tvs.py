@@ -31,14 +31,13 @@ TABLE_ATTR = '.table-attr' + TEXT_SEL
 TABLE_ATTR_WITH_DIV = '.table-attr .item' + TEXT_SEL
 TABLE_VAL = '.table-val *' + TEXT_SEL
 TABLE_TITLE = '.section-title' + TEXT_SEL
+NEXT_PAGES = '.pagination .lbt'
 
 
 class TvSpider(scrapy.Spider):
     name = 'tvs'
     allowed_domains = ['zoom.com.br']
-    start_urls = ['https://www.zoom.com.br/tv/preco-1500-ou-mais/smart-tv/48-polegadas/49-/tamanho-50-polegadas/'
-                  'tamanho-51-polegadas/tamanho-55-polegadas/tamanho-58-polegadas/tamanho-60-polegadas-ou-mais/'
-                  'tamanho-65-polegadas/tamanho-70-polegadas-ou-mais/ultra-definicao-4k-/full-hd/8k?resultsperpage=18']  # resultsperpage=72
+    start_urls = ['https://www.zoom.com.br/tv/todos?resultsperpage=72&unavailable=1&resultorder=4']
 
     def parse(self, response):
         self.logger.info(response.css(TOTAL_PRODUCTS).extract_first().strip())
@@ -55,6 +54,10 @@ class TvSpider(scrapy.Spider):
                                      formdata={'__pAct_': '_get_ph', '_ph_t': 'd', 'prodid': prod_id},
                                      callback=self.parse_price_history,
                                      meta={'name': name})
+
+        pages = response.css(NEXT_PAGES)
+        for page in pages:
+            yield scrapy.Request(response.urljoin(page.attrib['rel']))
 
     def parse_tv(self, response):
         il = ItemLoader(item=TvItem(), response=response)
