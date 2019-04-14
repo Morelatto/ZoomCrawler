@@ -23,3 +23,5 @@ six==1.11.0
 Twisted==18.9.0
 w3lib==1.19.0
 zope.interface==4.5.0
+pymongo>=2.4.1
+scrapy-mongodb==0.12.0
