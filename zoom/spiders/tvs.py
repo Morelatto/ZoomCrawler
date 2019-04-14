@@ -4,7 +4,7 @@ import scrapy
 
 from scrapy import Selector
 from scrapy.loader import ItemLoader
-from zoom_tvs.items import TvItem, TvOffer, PriceHistory, get_last, TableItem
+from zoom.items import TvItem, TvOffer, PriceHistory, get_last, TableItem
 
 # CSS Selectors
 TEXT_SEL = '::text'
@@ -112,63 +112,3 @@ class TvSpider(scrapy.Spider):
         self.logger.info('%s (%d)' % (loader.get_css(TABLE_TITLE), len(rows.keys())))
         item['row'] = rows
         yield item
-
-
-''''
-div.product-info 
- h1.product-name span@text() = name with model 
- div.rating span
-  [0] @className(); star_(\\d-\\d) = stars
-  [1] @text() = # avaliações
- a.price-label = price
-  strong@text()
-  span.decimal@text() = price decimal
-  span.parcel-value@text()
- div.min-price-40 span.value@text() = lowest price last 40 days
- div.min-price-today span.value@text() = lowest price today
-
-trocar cep? (shipping preview)
-
-for li in ul.product-list
- div.store-info img.alt = store name
- div.main-price-format
-  a.lbt
-   @text() = store price
-   span@text() = store price decimal
- div.secondary-price-format
-  span.parc-compl-first strong@text() = parcel amount (10x de, remove de)
-   a.lbt
-    @text() = parcel price with decimal
-  span.parc-compl-last@text() = total with parcels
-  
- 
-distinct list of stores
-
-table .tech-spec-table
- tbody 
-  tr.tt th@text() = title
-  tr.ti td.table-attr (if hasA() a@text() else if hasDiv() div@text() else @text() = key
-  tr.ti td.table-val (if hasA() a@text() else @text() = value
-
-TV(Item)
- name
- model
- stars
- ratings_amount
- tv_price_range
- 
- 
-TVPriceRange(Item)
- store
- price_a_vista
- parcel_amount = scrapy.Field(output_processor=lambda: value.split('x')[0])
- price_parcel
- parcel_total
-
- 
- 
- 
-
-tree representation of html pages - crawling tree algorithm
-
-'''

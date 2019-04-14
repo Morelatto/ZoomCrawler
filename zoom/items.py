@@ -1,10 +1,17 @@
 # -*- coding: utf-8 -*-
 import scrapy
+import re
 
-from scrapy.loader.processors import TakeFirst, Compose
 from scrapy.loader import ItemLoader, Identity
+from scrapy.loader.processors import Compose, TakeFirst, Join
+
+
+def get_last(l):
+    return l.split()[-1] if l is not None and len(l) > 0 else None
+
 
 parse_rating = Compose(TakeFirst(), lambda css_classes: css_classes.split()[-1].replace('star_', ''))
+remove_currency = Compose(TakeFirst(), get_last)
 
 
 class Fridge(scrapy.Item):
@@ -127,18 +134,6 @@ class WasherLoader(ItemLoader):
     recursos_basicos_out = Identity()
     recursos_avancados_out = Identity()
     voltagem = Identity()
-# -*- coding: utf-8 -*-
-import re
-import scrapy
-
-from scrapy.loader.processors import Compose, TakeFirst, Join
-
-
-def get_last(l):
-    return l.split()[-1] if l is not None and len(l) > 0 else None
-
-
-remove_currency = Compose(TakeFirst(), get_last)
 
 
 class TvItem(scrapy.Item):
@@ -177,6 +172,4 @@ class TableItem(scrapy.Item):
 create table TV_ITEM (item_id integer, model_id integer, store_id integer, price_cash real, price_parcel real, parcel_amount integer, parcel_total real); -- TODO select * from tv_item where price_parcel * parcel_amount != parcel_total; 
 create table TV_MODEL(model_id integer, name text, model text); -- max_price real, min_price real);
 create table STORES (store_id integer, name text);
-
-
 '''
