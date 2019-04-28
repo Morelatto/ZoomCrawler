@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from datetime import datetime
 
 BOT_NAME = 'zoom'
 
@@ -30,10 +31,14 @@ EXTENSIONS = {
 }
 
 ITEM_PIPELINES = {
-    'scrapy_mongodb.MongoDBPipeline': 300,
+    'zoom.pipelines.MongoDBCollectionsPipeline': 300,
 }
 
 MONGODB_URI = 'mongodb://localhost:27017'
 MONGODB_DATABASE = 'zoom'
-MONGODB_COLLECTION = 'tvs'
-MONGODB_SEPARATE_COLLECTIONS = True
+MONGODB_ADD_TIMESTAMP = True
+MONGODB_UNIQUE_KEY = 'name'
+
+LOG_LEVEL = 'INFO'
+# LOG_STDOUT = True
+# LOG_FILE = 'logs/crawl_' + datetime.now().strftime('%d%m%Y_%H%M%S')
