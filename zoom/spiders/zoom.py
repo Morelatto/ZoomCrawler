@@ -83,7 +83,6 @@ class ZoomSpider(scrapy.Spider):
                                          formdata={'__pAct_': '_get_ph', '_ph_t': 'd', 'prodid': prod_id},
                                          callback=self.parse_price_history,
                                          meta={'name': name})
-
         else:
             total_products = response.css(TOTAL_PRODUCTS).get()
             self.logger.info(total_products)
@@ -98,7 +97,7 @@ class ZoomSpider(scrapy.Spider):
 
         pages = response.css(NEXT_PAGES)
         for page in pages:
-            yield scrapy.Request(response.urljoin(page.attrib['rel']))
+            yield scrapy.Request(response.urljoin(page.attrib['rel']), meta={'cat': category})
 
     def parse_offers(self, response):
         il = ItemLoader(item=ProductItem(), response=response)
