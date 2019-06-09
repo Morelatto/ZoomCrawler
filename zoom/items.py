@@ -24,8 +24,15 @@ def get_numbers(s):
     return re.findall(r'\d', s)
 
 
+def format_usefulness(u):
+    if u[0] != '0': u[0] = '+' + u[0]
+    if u[1] != '0': u[1] = '-' + u[1]
+    return u
+
+
 _name = scrapy.Field(input_processor=MapCompose(strip_html5_whitespace), output_processor=Compose(TakeFirst()))
 _currency = scrapy.Field(output_processor=Compose(TakeFirst(), get_last))
+_stars = scrapy.Field(output_processor=Compose(TakeFirst(), get_numbers, Join('.')))
 
 
 class ProductItem(scrapy.Item):
@@ -49,9 +56,22 @@ class ProductOffer(scrapy.Item):
 
 class UserRating(scrapy.Item):
     name = _name
-    stars = scrapy.Field(output_processor=Compose(TakeFirst(), get_numbers, Join('.')))
+    stars = _stars
     ratings = scrapy.Field(output_processor=Compose(TakeFirst(), get_numbers, TakeFirst()))
     approval_rate = _name
+    comments = scrapy.Field()
+
+
+class UserComment(scrapy.Item):
+    username = _name
+    use = _name
+    date = scrapy.Field(input_processor=MapCompose(lambda d: d.split('em ')),
+                        output_processor=Compose(TakeFirst()))
+    title = scrapy.Field(output_processor=Compose(TakeFirst()))
+    stars = _stars
+    recommended = _name
+    text = scrapy.Field(output_processor=Compose(TakeFirst()))
+    useful = scrapy.Field(output_processor=format_usefulness)
 
 
 class PriceHistory(scrapy.Item):
