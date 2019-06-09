@@ -66,7 +66,7 @@ class ZoomSpider(scrapy.Spider):
 
     def start_requests(self):
         for cat in self.cats:
-            yield scrapy.Request('https://www.{}/{}/todos?{}'.format(ZOOM, cat, SEARCH_PARAMS), meta={'cat': cat})
+            yield scrapy.Request('https://www.{}{}/todos?{}'.format(ZOOM, cat, SEARCH_PARAMS), meta={'cat': cat})
 
     def parse(self, response):
         category = response.meta['cat']
@@ -126,15 +126,15 @@ class ZoomSpider(scrapy.Spider):
 
     def get_user_ratings(self, response):
         name = response.meta['name']
-        approval = response.css(APPROVAL_NUMBER).get()
-        if approval:
-            self.logger.debug('%s - RATING(%s)' % (name, approval.strip()))
+        ratings = response.css(RATINGS).get()
+        if ratings != '0 avaliações':
+            self.logger.debug('%s - RATING(%s)' % (name, ratings))
 
             ul = ItemLoader(item=UserRating(), response=response)
             ul.add_value('name', name)
             ul.add_css('stars', STARS)
-            ul.add_css('ratings', RATINGS)
-            ul.add_value('approval_rate', approval)
+            ul.add_value('ratings', ratings)
+            ul.add_css('approval_rate', APPROVAL_NUMBER)
             self.add_comments(ul)
             return ul.load_item()
 
@@ -156,19 +156,21 @@ class ZoomSpider(scrapy.Spider):
         hl = ItemLoader(item=PriceHistory())
         hl.add_value('name', response.meta['name'])
         self.add_history(hl, response)
-        yield hl.load_item()
+        if hl.get_collected_values('history'):
+            yield hl.load_item()
 
     def add_history(self, loader, response):
         json_response = json.loads(response.body_as_unicode())
-        self.logger.debug('%s - HIST(%s)' % (response.meta['name'], json_response.get('title')))
-
-        history = dict()
-        for point in json_response['points']:
-            ddmm = point['x']['label']
-            day, month = ddmm.split('/')
-            value = point['y']['value']
-            history[month] = {**history.get(month, {}), **{day: float("{0:.2f}".format(value))}}
-        loader.add_value('history', history)
+        points = json_response['points']
+        if points:
+            self.logger.debug('%s - HIST(%s)' % (response.meta['name'], json_response.get('title')))
+            history = dict()
+            for point in points:
+                ddmm = point['x']['label']
+                day, month = ddmm.split('/')
+                value = point['y']['value']
+                history[month] = {**history.get(month, {}), **{day: float("{0:.2f}".format(value))}}
+            loader.add_value('history', history)
 
     def add_comments(self, loader):
         users = loader.selector.css(COMM_USER_LIST)

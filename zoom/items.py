@@ -70,7 +70,7 @@ class UserComment(scrapy.Item):
     title = scrapy.Field(output_processor=Compose(TakeFirst()))
     stars = _stars
     recommended = _name
-    text = scrapy.Field(output_processor=Compose(TakeFirst()))
+    text = _name
     useful = scrapy.Field(output_processor=format_usefulness)
 
 
