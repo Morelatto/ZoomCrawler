@@ -24,12 +24,13 @@ def get_numbers(s):
     return re.findall(r'\d', s)
 
 
-_name = scrapy.Field(input_processor=MapCompose(strip_html5_whitespace), output_processor=TakeFirst())
+_name = scrapy.Field(input_processor=MapCompose(strip_html5_whitespace), output_processor=Compose(TakeFirst()))
 _currency = scrapy.Field(output_processor=Compose(TakeFirst(), get_last))
 
 
 class ProductItem(scrapy.Item):
     name = _name
+    category = _name
     url = scrapy.Field(output_processor=Compose(TakeFirst()))
     price = _currency
     store = _name
@@ -54,9 +55,8 @@ class UserRating(scrapy.Item):
 
 
 class PriceHistory(scrapy.Item):
-    default_output_processor = TakeFirst()
-    name = scrapy.Field()
-    history = scrapy.Field()
+    name = _name
+    history = scrapy.Field(output_processor=Compose(TakeFirst()))
 
 
 class TechSpecTable(scrapy.Item):

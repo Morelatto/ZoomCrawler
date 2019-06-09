@@ -55,17 +55,17 @@ class ZoomSpider(scrapy.Spider):
 
     def start_requests(self):
         for cat in self.cats:
-            yield scrapy.Request('https://www.{}/{}/todos?{}'.format(ZOOM, cat, SEARCH_PARAMS))
+            yield scrapy.Request('https://www.{}/{}/todos?{}'.format(ZOOM, cat, SEARCH_PARAMS), meta={'cat': cat})
 
     def parse(self, response):
+        category = response.meta['cat']
         total_offers = response.css(TOTAL_OFFERS).get()
-
         if total_offers:
             self.logger.info(total_offers.strip())
             for offer in response.css(OFFER_LIST):
                 url = offer.css(OFFER_URL).attrib['href']
                 name = offer.css(OFFER_NAME).get()
-                yield scrapy.Request(response.urljoin(url), self.parse_offers, meta={'name': name})
+                yield scrapy.Request(response.urljoin(url), self.parse_offers, meta={'name': name, 'cat': category})
 
                 prod_id = offer.css(PROD_ID).attrib['data-product-id']
                 yield scrapy.FormRequest(url='https://www.{}/product_desk'.format(ZOOM),
@@ -78,6 +78,7 @@ class ZoomSpider(scrapy.Spider):
             self.logger.info(total_products)
             for prod in response.css(PRODUCT_LIST):
                 il = ItemLoader(item=ProductItem(), selector=prod)
+                il.add_value('category', category)
                 il.add_css('url', ITEM_URL)
                 il.add_css('name', ITEM_NAME)
                 il.add_css('price', ITEM_PRICE)
@@ -91,6 +92,7 @@ class ZoomSpider(scrapy.Spider):
     def parse_offers(self, response):
         il = ItemLoader(item=ProductItem(), response=response)
         il.add_value('name', response.meta['name'])
+        il.add_value('category', response.meta['category'])
         self.add_offers(il.nested_css(OFFER_TABLE))
 
         yield il.load_item()
@@ -113,15 +115,16 @@ class ZoomSpider(scrapy.Spider):
 
     def get_user_ratings(self, response):
         name = response.meta['name']
-        approval = response.css(APPROVAL_NUMBER).get().strip()
-        self.logger.debug('%s - %s' % (name, approval))
+        approval = response.css(APPROVAL_NUMBER).get()
+        if approval:
+            self.logger.debug('%s - %s' % (name, approval.strip()))
 
-        ul = ItemLoader(item=UserRating(), response=response)
-        ul.add_value('name', name)
-        ul.add_css('stars', STARS)
-        ul.add_css('ratings', RATINGS)
-        ul.add_value('approval_rate', approval)
-        return ul.load_item()
+            ul = ItemLoader(item=UserRating(), response=response)
+            ul.add_value('name', name)
+            ul.add_css('stars', STARS)
+            ul.add_css('ratings', RATINGS)
+            ul.add_value('approval_rate', approval)
+            return ul.load_item()
 
     def get_tech_spec_table(self, response):
         name = response.meta['name']
@@ -154,3 +157,5 @@ class ZoomSpider(scrapy.Spider):
             value = point['y']['value']
             history[month] = {**history.get(month, {}), **{day: float("{0:.2f}".format(value))}}
         loader.add_value('history', history)
+
+    # TODO add comments

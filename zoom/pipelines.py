@@ -1,14 +1,15 @@
 # -*- coding: utf-8 -*-
 from scrapy_mongodb import MongoDBPipeline
-from zoom.items import PriceHistory, TvItem, TechSpecTable
+from zoom.items import PriceHistory, ProductItem, TechSpecTable, UserRating
 
 
 # TODO /etc/mongodb.conf
 class MongoDBCollectionsPipeline(MongoDBPipeline):
     mapping = {
-        TvItem: 'tv_offers',
+        ProductItem: 'products',
         PriceHistory: 'price_history',
         TechSpecTable: 'tech_spec_table',
+        UserRating: 'user_rating',
     }
 
     def __init__(self, **kwargs):
