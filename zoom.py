@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """Script to download product information from zoom.com.br
 
 Usage:
