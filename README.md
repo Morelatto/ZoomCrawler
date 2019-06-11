@@ -36,7 +36,7 @@ Collected information:
  ```
 
 ## No MongoDB
-To run without Mongo comment the following lines in settings.py:
+To run without Mongo comment the following lines on settings.py:
 ```
 ITEM_PIPELINES = {
     'zoom.pipelines.MongoDBCollectionsPipeline': 300,
@@ -47,7 +47,7 @@ MONGODB_ADD_TIMESTAMP = True
 MONGODB_UNIQUE_KEY = 'name'
 ```
 
-Optionally, to save results to file, add to settings.py:
+Optionally, to save results to file add to settings.py:
 ```
 FEED_URI = 'zoom_results.json'
 FEED_EXPORT_ENCODING = 'utf-8'
