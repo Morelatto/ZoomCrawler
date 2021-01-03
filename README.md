@@ -5,38 +5,35 @@ Download products from [Zoom](https://zoom.com.br/) based on category or subcate
 Collected information:
 - [x] Product details
 - [x] Offers from product
-- [x] Price history
-- [x] User rating and comments
+- [ ] Price history
+- [ ] User rating and comments
 
 ## Requirements
+* [Python 3](https://www.python.org)
 * [Scrapy](https://github.com/scrapy/scrapy)
-* [scrapy-mongodb](https://github.com/sebdah/scrapy-mongodb)
-* [pymongo](https://github.com/mongodb/mongo-python-driver)
-* [requests](https://github.com/kennethreitz/requests)
+* [scrapy-mongodb](https://github.com/sebdah/scrapy-mongodb) - optional
+* [pymongo](https://github.com/mongodb/mongo-python-driver) - optional
 * [docopt](https://github.com/docopt/docopt)
 
 ## Usage
 ```
-  zoom.py <category>...
-  zoom.py --list-categories | --list-subcategories
+  zoom.py <category_url>...
   zoom.py -h | --help | --version
 ```
 
 ## Arguments
 ```
-  <category>...         Category or subcategory names to filter.
+  <category_url>...     List of category or subcategory urls to crawl. Ex.: tv/smart-tv tv
 ```
 
 ## Options
 ```
-  --list-categories     List all product categories.
-  --list-subcategories  List all product sub categories.
   -h, --help            Show help message.
   --version             Show version.
  ```
 
-## No MongoDB
-To run without Mongo comment the following lines on settings.py:
+## MongoDB
+Uncomment the following lines on settings.py to save results to a local MongoDB instance:
 ```
 ITEM_PIPELINES = {
     'zoom.pipelines.MongoDBCollectionsPipeline': 300,
@@ -47,8 +44,4 @@ MONGODB_ADD_TIMESTAMP = True
 MONGODB_UNIQUE_KEY = 'name'
 ```
 
-Optionally, to save results to file add to settings.py:
-```
-FEED_URI = 'zoom_results.json'
-FEED_EXPORT_ENCODING = 'utf-8'
-```
+More information [here](https://github.com/sebdah/scrapy-mongodb).

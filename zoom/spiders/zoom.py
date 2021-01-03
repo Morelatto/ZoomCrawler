@@ -3,40 +3,35 @@ import json
 import scrapy
 
 from scrapy.loader import ItemLoader
-from zoom.items import ProductItem, ProductOffer, PriceHistory, TechSpecTable, UserRating, UserComment
+from zoom.items import ProductItem, ProductOffer, PriceHistory, TechSpecTable, UserComment
 
-ZOOM = 'zoom.com.br'
+ZOOM_DOMAIN = 'zoom.com.br'
+ZOOM_URL = 'https://' + ZOOM_DOMAIN
 
 # CSS Selectors
 TEXT_SEL = '::text'
 ATTR_SEL = '::attr(%s)'
-NEXT_PAGES = '.pagination .lbt'
-# offer list
-TOTAL_OFFERS = '.products-amount' + TEXT_SEL
-OFFER_LIST = '#storeFrontList .tp-default'
-OFFER_URL = 'a.name-link'
-OFFER_NAME = '.prod-name a' + TEXT_SEL
-# products with no offers
-TOTAL_PRODUCTS = '.offers-amount strong' + TEXT_SEL
-PRODUCT_LIST = '.item[data-oid]'
-ITEM_URL = '.o-lead' + ATTR_SEL % 'rel'
-ITEM_NAME = '.o-name' + TEXT_SEL
-ITEM_PRICE = '.o-price .value' + TEXT_SEL
-ITEM_STORE = '.o-store' + TEXT_SEL
-# price history
-PROD_ID = '.save-product'
-# offers
-OFFER_TABLE = '.prices'
-TRUSTED_STORES = '.price-tools .title span:nth-child(2)' + TEXT_SEL
-PRODUCT_LIST_ITEM = '.product-list li'
-STORE_NAME = '.store-info img' + ATTR_SEL % 'alt'
-PRICE_CASH = '.main-price-format .lbt'
-PARCEL_PRICE = '.secondary-price-format .lbt'
-PARCEL_AMOUNT = '.parc-compl-first strong' + TEXT_SEL
+
+# listing page
+PRODUCT_LIST = '.card--prod .cardBody'
+ITEM_URL = '.name' + ATTR_SEL % 'href'
+ITEM_NAME = '.name' + TEXT_SEL
+ITEM_PRICE = '.price .customValue *' + TEXT_SEL
+ITEM_STORE = '.storeCount' + TEXT_SEL
+
+# product page
+PRODUCT_NAME = 'string(//h1[starts-with(@class,"OverviewArea_TitleText")])'
+OFFER_LIST = '//li[starts-with(@class,"SimilarsList_ListItem")]'
+OFFER_STORE = './/img[starts-with(@class,"MerchantBrand_BrandImage")]/@alt'
+OFFER_PRICE_C = 'string(.//a[starts-with(@class,"PriceBox_Value")])'
+OFFER_PRICE_I = 'string(.//span[starts-with(@class,"PaymentDetails_FirstLabel")])'
+PRICE_VAR_LAST_40 = '//div[starts-with(@class,"ProductPageBody_WithoutHorizontalPadding")]/section/div/div[2]/div[2]/span/text()'
+PRICE_VAR_TODAY = '//div[starts-with(@class,"ProductPageBody")]/section/div/div[2]/div[3]/span/text()'
+
 # user ratings
 APPROVAL_NUMBER = '.product-rating-status .number' + TEXT_SEL
 STARS = '.rating span' + ATTR_SEL % 'class'
-RATINGS = '.rating span' + TEXT_SEL
+
 # comments
 COMM_USER_LIST = '.review-list .user'
 COMM_REVIEW_LIST = '.review-list .review'
@@ -48,108 +43,73 @@ COMM_STARS = '.product-rating span' + ATTR_SEL % 'class'
 COMM_RECOMMENDS = '.recommendation' + TEXT_SEL
 COMM_TEXT = '.text' + TEXT_SEL
 COMM_USEFULNESS = '.counter' + TEXT_SEL
-# tech_spec_table
-TABLE_ROW = '.details .ti'
-TABLE_ATTR = '.table-attr *' + TEXT_SEL
-TABLE_VAL = '.table-val *' + TEXT_SEL
 
-SEARCH_PARAMS = 'resultsperpage=72&unavailable=1&resultorder=4'  # ordenar por mais buscados
+# spec table
+TABLE_ROWS = '//tr[starts-with(@class,"DetailsSection_Row")]'
+TABLE_KEY = 'string(.//th[starts-with(@class,"DetailsSection_Key")])'
+TABLE_VAL = './/td[starts-with(@class,"DetailsSection_Value")]//text()'
 
 
 class ZoomSpider(scrapy.Spider):
     name = 'zoom'
-    allowed_domains = [ZOOM]
+    allowed_domains = [ZOOM_DOMAIN]
 
-    def __init__(self, cats='', **kwargs):
+    def __init__(self, cat_urls, **kwargs):
         super().__init__(**kwargs)
-        self.cats = cats.split(';')
+        self.cats = cat_urls
 
     def start_requests(self):
         for cat in self.cats:
-            yield scrapy.Request('https://www.{}{}/todos?{}'.format(ZOOM, cat, SEARCH_PARAMS), meta={'cat': cat})
+            url = '{}/{}?page=1'.format(ZOOM_URL, cat)
+            yield scrapy.Request(url, meta={'page': 1, 'cat': cat})
 
-    def parse(self, response):
-        category = response.meta['cat']
-        total_offers = response.css(TOTAL_OFFERS).get()
-        if total_offers:
-            self.logger.info(total_offers.strip())
-            for offer in response.css(OFFER_LIST):
-                url = offer.css(OFFER_URL).attrib['href']
-                name = offer.css(OFFER_NAME).get()
-                yield scrapy.Request(response.urljoin(url), self.parse_offers, meta={'name': name, 'cat': category})
+    def parse(self, response, **kwargs):
+        for prod in response.css(PRODUCT_LIST):
+            il = ItemLoader(item=ProductItem(), selector=prod)
+            il.add_css('name', ITEM_NAME)
+            il.add_value('category', response.meta['cat'])
+            il.add_css('store', ITEM_STORE)
+            il.add_css('url', ITEM_URL)
+            il.add_css('price', ITEM_PRICE)
+            item = il.load_item()
+            self.logger.info(item)
+            yield scrapy.Request(ZOOM_URL + item['url'], callback=self.parse_product_page, meta={'item': item})
 
-                prod_id = offer.css(PROD_ID).attrib['data-product-id']
-                yield scrapy.FormRequest(url='https://www.{}/product_desk'.format(ZOOM),
-                                         formdata={'__pAct_': '_get_ph', '_ph_t': 'd', 'prodid': prod_id},
-                                         callback=self.parse_price_history,
-                                         meta={'name': name})
-        else:
-            total_products = response.css(TOTAL_PRODUCTS).get()
-            self.logger.info(total_products)
-            for prod in response.css(PRODUCT_LIST):
-                il = ItemLoader(item=ProductItem(), selector=prod)
-                il.add_value('category', category)
-                il.add_css('url', ITEM_URL)
-                il.add_css('name', ITEM_NAME)
-                il.add_css('price', ITEM_PRICE)
-                il.add_css('store', ITEM_STORE)
-                yield il.load_item()
+        page = response.meta['page'] + 1
+        if page <= 7:
+            next_url = "{}={}".format(response.url[:-2], page)
+            yield scrapy.Request(next_url, meta={'page': page, 'cat': response.meta['cat']})
 
-        pages = response.css(NEXT_PAGES)
-        for page in pages:
-            yield scrapy.Request(response.urljoin(page.attrib['rel']), meta={'cat': category})
+    def parse_product_page(self, response):
+        for offer in response.xpath(OFFER_LIST):
+            ol = ItemLoader(item=ProductOffer(), selector=offer)
+            ol.add_xpath('name', PRODUCT_NAME)
+            ol.add_xpath('store', OFFER_STORE)
+            ol.add_xpath('price_cash', OFFER_PRICE_C)
+            ol.add_xpath('price_cash_number', OFFER_PRICE_C)
+            ol.add_xpath('price_install', OFFER_PRICE_I)
 
-    def parse_offers(self, response):
-        il = ItemLoader(item=ProductItem(), response=response)
-        il.add_value('name', response.meta['name'])
-        il.add_value('category', response.meta['cat'])
-        self.add_offers(il.nested_css(OFFER_TABLE))
+            item = ol.load_item()
+            self.logger.warn(item)
+            yield item
 
-        yield il.load_item()
-        yield self.get_user_ratings(response)
-        yield self.get_tech_spec_table(response)
-
-    def add_offers(self, loader):
-        name = loader.get_collected_values('name')
-        trust = loader.selector.css(TRUSTED_STORES)
-        self.logger.info('%s - OFFERS(%s)' % (name[0], trust.get()))
-
-        for offer in loader.selector.css(PRODUCT_LIST_ITEM):
-            pl = ItemLoader(item=ProductOffer(), selector=offer)
-            pl.add_css('store', STORE_NAME)
-            pl.add_css('price_cash', PRICE_CASH + TEXT_SEL)
-            pl.add_css('price_cash', '%s span%s' % (PRICE_CASH, TEXT_SEL))
-            pl.add_css('price_parcel', PARCEL_PRICE + TEXT_SEL)
-            pl.add_css('parcel_amount', PARCEL_AMOUNT)
-            loader.add_value('offer_list', pl.load_item())
-
-    def get_user_ratings(self, response):
-        name = response.meta['name']
-        ratings = response.css(RATINGS).get()
-        if ratings != '0 avaliações':
-            self.logger.debug('%s - RATING(%s)' % (name, ratings))
-
-            ul = ItemLoader(item=UserRating(), response=response)
-            ul.add_value('name', name)
-            ul.add_css('stars', STARS)
-            ul.add_value('ratings', ratings)
-            ul.add_css('approval_rate', APPROVAL_NUMBER)
-            self.add_comments(ul)
-            return ul.load_item()
-
-    def get_tech_spec_table(self, response):
-        name = response.meta['name']
-        rows = response.css(TABLE_ROW)
-        self.logger.debug('%s TECH(%s)' % (name, len(rows)))
+        # for rating in response.css():
+        #     ul = ItemLoader(item=UserRating(), selector=rating)
+        #     ul.add_value('name', name)
+        #     ul.add_css('stars', STARS)
+        #     ul.add_value('ratings', ratings)
+        #     ul.add_css('approval_rate', APPROVAL_NUMBER)
+        #     self.add_comments(ul)
+        #     return ul.load_item()
 
         tl = ItemLoader(item=TechSpecTable(), response=response)
-        tl.add_value('name', response.meta['name'])
-        for row in rows:
-            rk = row.css(TABLE_ATTR).get()
-            rv = row.css(TABLE_VAL).getall()
+        tl.add_xpath('name', PRODUCT_NAME)
+        for row in response.xpath(TABLE_ROWS):
+            rk = row.xpath(TABLE_KEY).get()
+            rv = row.xpath(TABLE_VAL).getall()
             tl.add_value('rows', {rk: rv})
 
-        return tl.load_item()
+        yield tl.load_item()
 
     def parse_price_history(self, response):
         hl = ItemLoader(item=PriceHistory())

@@ -2,7 +2,7 @@
 import scrapy
 import re
 
-from scrapy.loader.processors import Compose, TakeFirst, Join, MapCompose
+from itemloaders.processors import Compose, TakeFirst, Join, MapCompose
 from w3lib.html import strip_html5_whitespace
 
 
@@ -31,24 +31,29 @@ def format_usefulness(u):
 
 
 _name = scrapy.Field(input_processor=MapCompose(strip_html5_whitespace), output_processor=Compose(TakeFirst()))
-_currency = scrapy.Field(output_processor=Compose(TakeFirst(), get_last))
+_currency = scrapy.Field(input_processor=MapCompose(strip_html5_whitespace),
+                         output_processor=Compose(TakeFirst(), get_numbers, Join('')))
 _stars = scrapy.Field(output_processor=Compose(TakeFirst(), get_numbers, Join('.')))
 
 
 class ProductItem(scrapy.Item):
     name = _name
     category = _name
-    url = scrapy.Field(output_processor=Compose(TakeFirst()))
-    price = _currency
     store = _name
+    url = _name
+    price = _name
     offer_list = scrapy.Field()
+
+    def __repr__(self):
+        return str(dict(self))
 
 
 class ProductOffer(scrapy.Item):
+    name = _name
     store = _name
-    price_cash = scrapy.Field(output_processor=Compose(Join(''), get_last))
-    price_parcel = _currency
-    parcel_amount = scrapy.Field(output_processor=Compose(TakeFirst(), lambda v: v.split('x')[0]))
+    price_cash = _name
+    price_cash_number = _currency
+    price_install = _name
 
     def __repr__(self):
         return str(dict(self))
